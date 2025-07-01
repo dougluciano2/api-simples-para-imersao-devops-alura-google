@@ -1,0 +1,106 @@
+### IDEs e Ferramentas de Desenvolvimento ###
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+out/
+
+# Eclipse
+.apt_generated/
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+bin/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# VS Code
+.vscode/
+
+### Sistema Operacional ###
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+### Arquivos de Compilação Java ###
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+### Arquivos Temporários e Logs ###
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+*.swn
+
+# Arquivos de log do Java VM
+hs_err_pid*
+replay_pid*
+
+### Ferramentas de Build ###
+# Maven
+target/
+dependency-reduced-pom.xml
+release.properties
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+buildNumber.properties
+.mvn/
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Arquivos de lock e cache
+*.lock
+mvnw.cmd
+mvnw
+gradlew
+gradlew.bat
+
+### Test Reports ###
+test-output/
+surefire-reports/
+jacoco.exec
+
+### Arquivos de configuração de container/Docker ###
+docker-compose.override.yml
+*.env
+
+### Banco de Dados (H2, SQLite etc.) ###
+*.mv.db
+*.h2.db
+*.db
+*.sqlite
+*.sql
+
+### Arquivos Sensíveis ###
+# application.properties permitido
+#application.yml
+#application-*.properties
+#application-*.yml
+.env
+.env.*
+
+### Extras de Ambiente ###
+# Se usar o Spring Boot DevTools
+.spring-boot-devtools.properties
