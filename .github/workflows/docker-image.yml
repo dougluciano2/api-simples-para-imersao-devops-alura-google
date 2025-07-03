@@ -44,4 +44,4 @@ jobs:
           # Ainda é uma boa prática dar uma tag para a imagem durante o build
           tags: my-java-app:${{ github.sha }}
           cache-from: type=gha
-          cache-to: type=gha, mode=max
+          cache-to: type=gha,mode=max
