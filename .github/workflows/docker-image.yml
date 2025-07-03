@@ -1,0 +1,45 @@
+# Nome do seu workflow
+name: CI - my-java-app-alura-google-imersion-workflow
+
+# Gatilho: rodar no push para o branch 'main'
+on:
+  push:
+    branches: [ "main" ]
+
+# Jobs a serem executados
+jobs:
+  build-validation:
+    # Máquina virtual para rodar o job
+    runs-on: ubuntu-latest
+
+    # Passos do job
+    steps:
+      # 1. Checkout do código
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup do Java JDK 21
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      # 3. OTIMIZAÇÃO: Cache das dependências do Maven
+      - name: Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      
+      # 4. Apenas constrói a imagem Docker (sem push)
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # IMPORTANTE: Definimos 'push' como 'false'
+          push: false
+          # Ainda é uma boa prática dar uma tag para a imagem durante o build
+          tags: my-java-app:${{ github.sha }}
