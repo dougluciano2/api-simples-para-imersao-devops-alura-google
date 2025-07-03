@@ -6,6 +6,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -20,5 +22,6 @@ public class Person {
     private String name;
     private String tel;
     private String email;
+    private LocalDateTime createdAt = LocalDateTime.now();
 
 }
