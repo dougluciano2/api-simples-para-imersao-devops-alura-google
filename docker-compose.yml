@@ -1,0 +1,21 @@
+# Versão da sintaxe do Docker Compose
+version: '3.8'
+
+# Definicao dos nossos serviços (contêineres)
+services:
+  # Nome do nosso serviço da API
+  api-linguagens:
+    # Define um nome amigável para o contêiner que será criado.
+    container_name: my-java-app
+
+    # Seção de build, configurada para usar o repositório Git.
+    build:
+      # O 'contexto' do build é a URL do seu repositório no GitHub.
+      # O Docker Compose vai clonar este repositório para construir a imagem
+      # usando o Dockerfile que ele encontrar lá na raiz.
+      context: https://github.com/dougluciano2/api-simples-para-imersao-devops-alura-google.git
+
+    # Mapeia a porta 8080 do seu computador para a porta 8080 do contêiner,
+    # permitindo que você acesse a API em http://localhost:8080.
+    ports:
+      - "8080:8080"
