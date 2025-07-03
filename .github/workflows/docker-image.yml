@@ -38,7 +38,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 5. Apenas constrói a imagem Docker (com cache de camadas habilitado)
+      # 5. Baixa as dependências no runner para "criar" o cache
+      - name: Download Maven dependencies
+        run: mvn dependency:go-offline
+
+      # 6. Apenas constrói a imagem Docker (com cache de camadas habilitado)
       - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
