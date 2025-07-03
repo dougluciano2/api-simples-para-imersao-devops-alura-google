@@ -22,7 +22,6 @@ public class Person {
     private String name;
     private String tel;
     private String email;
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private boolean inUse;
+
 
 }
