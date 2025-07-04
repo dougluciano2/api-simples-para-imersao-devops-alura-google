@@ -1,0 +1,30 @@
+-- logon na conta google via CLI
+gcloud auth login
+
+gcloud config set project <project-id>
+
+-- vamos usar a porta 8080
+gcloud run deploy --port=8000
+
+Comandos que executei:
+gcloud auth login
+--
+gcloud config set project double-willow-464818-h4
+-- depois de project é o ID do meu projeto.
+
+gcloud run deploy --port=8080
+
+-- escolhi o diretorio padrão (Somente enter) pois eu ja estava no diretorio do projeto.
+
+-- service name: my-java-app
+
+habilitei as apis artifactregistry.googleapis.com cloudbuild.googleapis.com run.googleapis.com com o "y"
+
+escolhi a região 32 (southamerica-east1) que é em são paulo
+
+Deploying from source requires an Artifact Registry Docker repository to store built containers. A repository named [cloud-run-source-deploy] in
+ region [southamerica-east1] will be created. -- escolhi y para continuar
+
+ Permiti acesso sem autenticação (unauthenticated invocations) com "y"
+
+ Depois fui no projeto pelo browser e pesquisei "cloud run" e peguei a url e acessei com /swagger-ui.html
