@@ -46,7 +46,6 @@ resource "google_project_service" "apis" {
     "cloudbuild.googleapis.com", "sqladmin.googleapis.com"
   ])
   service = each.key
-  disable_dependency_handling = true
 }
 
 resource "google_artifact_registry_repository" "api_repo" {
