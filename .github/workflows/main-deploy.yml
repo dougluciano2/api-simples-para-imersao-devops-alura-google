@@ -9,6 +9,7 @@ env:
   GCP_REGION: us-central1
   APP_NAME: my-java-app
   GAR_REPO: api-repo
+  DB_INSTANCE_NAME: my-java-app-mysql-db
 
 permissions:
   contents: 'read'
@@ -72,30 +73,21 @@ jobs:
             -var="app_name=${{ env.APP_NAME }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}"
 
+      # --- PASSO DE DEPLOY REESCRITO DE FORMA MAIS SIMPLES ---
       - name: Deploy to Cloud Run
         id: deploy
-        uses: 'google-github-actions/deploy-cloudrun@v2'
-        with:
-          service: ${{ env.APP_NAME }}
-          region: ${{ env.GCP_REGION }}
-          image: ${{ steps.build-image.outputs.digest }}
+        run: |
+          gcloud run deploy ${{ env.APP_NAME }} \
+            --image=${{ steps.build-image.outputs.digest }} \
+            --region=${{ env.GCP_REGION }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances=${{ env.DB_INSTANCE_NAME }} \
+            --update-env-vars="DB_USER=root,DB_NAME=,DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
 
-          # As variáveis de ambiente para a aplicação rodando no Cloud Run.
-          # O pipe com o traço (|-) indica um bloco de texto de múltiplas linhas.
-          env_vars: |-
-            DB_USER=root
-            DB_NAME=
-            DB_HOST=/cloudsql/${{ env.GCP_PROJECT_ID }}:${{ env.GCP_REGION }}:${{ env.APP_NAME }}-mysql-db
-
-          # A seção 'database' está aqui, no mesmo nível de indentação
-          # de 'service', 'region', 'image' e 'env_vars'.
-          database:
-            instance: ${{ env.APP_NAME }}-mysql-db
-            secrets:
-              # Mapeia o segredo do GitHub para a variável de ambiente DB_PASSWORD
-              # que a aplicação irá usar para se conectar.
-              - name: DB_PASSWORD
-                value: ${{ secrets.DB_PASSWORD }}
-
-      - name: Show Output
-        run: "echo 'Deploy finalizado! Acesse sua API em: ${{ steps.deploy.outputs.url }}'"
+      - name: Show Output URL
+        run: |
+          # Pega a URL do serviço que acabou de ser implantado
+          SERVICE_URL=$(gcloud run services describe ${{ env.APP_NAME }} --platform=managed --region=${{ env.GCP_REGION }} --project=${{ env.GCP_PROJECT_ID }} --format="value(status.url)")
+          echo "Deploy finalizado! Acesse sua API em: $SERVICE_URL"
