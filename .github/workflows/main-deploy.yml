@@ -73,21 +73,22 @@ jobs:
             -var="app_name=${{ env.APP_NAME }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}"
 
+      # <<< CORREÇÃO APLICADA NESTE PASSO >>>
       - name: Deploy to Cloud Run
         id: deploy
         run: |
-          # Define a tag completa da imagem para garantir que usamos a correta
-          IMAGE_TAG="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.APP_NAME }}:${{ github.sha }}"
+          # Pega o nome de conexão completo da instância do SQL para garantir a conexão segura
+          DB_CONNECTION_NAME=$(gcloud sql instances describe ${{ env.DB_INSTANCE_NAME }} --project=${{ env.GCP_PROJECT_ID }} --format="value(connectionName)")
 
-          # Executa o comando de deploy usando gcloud
+          # Executa o comando de deploy, agora passando TODAS as variáveis de ambiente necessárias
           gcloud run deploy ${{ env.APP_NAME }} \
-            --image=${IMAGE_TAG} \
+            --image=${{ steps.build-image.outputs.digest }} \
             --region=${{ env.GCP_REGION }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --platform=managed \
             --allow-unauthenticated \
-            --add-cloudsql-instances=${{ env.DB_INSTANCE_NAME }} \
-            --update-env-vars="DB_USER=root,DB_NAME=,DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
+            --add-cloudsql-instances=${DB_CONNECTION_NAME} \
+            --update-env-vars="DB_USER=root,DB_NAME=sa,DB_PASSWORD=${{ secrets.DB_PASSWORD }},DB_HOST=/cloudsql/${DB_CONNECTION_NAME}"
 
       - name: Show Output URL
         id: final-output
