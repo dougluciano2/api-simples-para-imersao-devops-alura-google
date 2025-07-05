@@ -77,12 +77,15 @@ jobs:
       - name: Deploy to Cloud Run
         id: deploy
         run: |
-          # Pega o nome de conexão completo da instância do SQL para garantir a conexão segura
+          # Define a tag completa da imagem que foi enviada para o Artifact Registry
+          IMAGE_WITH_TAG="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.APP_NAME }}:${{ github.sha }}"
+          
+          # Pega o nome de conexão da instância do SQL
           DB_CONNECTION_NAME=$(gcloud sql instances describe ${{ env.DB_INSTANCE_NAME }} --project=${{ env.GCP_PROJECT_ID }} --format="value(connectionName)")
 
-          # Executa o comando de deploy, agora passando TODAS as variáveis de ambiente necessárias
+          # Executa o comando de deploy usando a tag completa da imagem
           gcloud run deploy ${{ env.APP_NAME }} \
-            --image=${{ steps.build-image.outputs.digest }} \
+            --image=${IMAGE_WITH_TAG} \
             --region=${{ env.GCP_REGION }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --platform=managed \
