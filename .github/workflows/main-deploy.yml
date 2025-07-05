@@ -64,7 +64,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          push: true # Agora vamos enviar a imagem!
+          push: true
           tags: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.APP_NAME }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -90,13 +90,15 @@ jobs:
           region: ${{ env.GCP_REGION }}
           image: ${{ steps.build-image.outputs.digest }}
 
+          # <<< CORREÇÃO AQUI >>>
+          # A indentação de 'env_vars' e 'database' foi corrigida.
+          # Ambos são parâmetros diretos de 'with:'.
+
           # Define as variáveis de ambiente para a aplicação
           env_vars: |-
             DB_USER=db_app
             DB_NAME=sa
-            # A URL do banco é injetada automaticamente pela action quando a seção 'database' é usada
 
-          # CORREÇÃO AQUI: 'database' está no mesmo nível de 'service', 'image', etc.
           # Configura a conexão segura com o Cloud SQL
           database:
             instance: ${{ env.APP_NAME }}-mysql-db
