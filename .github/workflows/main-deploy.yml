@@ -9,7 +9,6 @@ env:
   GCP_REGION: us-central1
   APP_NAME: my-java-app
   GAR_REPO: api-repo
-  TF_VAR_db_password: ${{ secrets.DB_PASSWORD }} # Passa o segredo para o Terraform
 
 permissions:
   contents: 'read'
@@ -73,7 +72,6 @@ jobs:
             -var="app_name=${{ env.APP_NAME }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}"
 
-      # <<< A CORREÇÃO FINAL ESTÁ NESTE PASSO ABAIXO >>>
       - name: Deploy to Cloud Run
         id: deploy
         uses: 'google-github-actions/deploy-cloudrun@v2'
@@ -86,9 +84,10 @@ jobs:
           env_vars: |-
             DB_USER=root
             DB_NAME=
-            # A URL do banco (DB_HOST) será injetada automaticamente pela seção 'database' abaixo
+            DB_HOST=/cloudsql/${{ env.GCP_PROJECT_ID }}:${{ env.GCP_REGION }}:${{ env.APP_NAME }}-mysql-db
 
-          # A seção 'database' deve estar aqui, no mesmo nível de 'service' e 'image'
+          # <<< CORREÇÃO DE INDENTAÇÃO APLICADA AQUI >>>
+          # A seção 'database' agora está no mesmo nível de 'service' e 'image'
           database:
             instance: ${{ env.APP_NAME }}-mysql-db
             secrets:
