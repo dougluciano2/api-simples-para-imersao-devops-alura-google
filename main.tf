@@ -1,10 +1,6 @@
-# Configura o provedor e o backend remoto
 terraform {
-  # --- BLOCO FALTANTE ADICIONADO AQUI ---
-  # Diz ao Terraform para salvar seu arquivo de estado no GCS Bucket
   backend "gcs" {
-    # Use o nome do bucket que você criou (com o erro de digitação)
-    bucket  = "ouble-willow-464818-h4-bucket"
+    bucket  = "ouble-willow-464818-h4-bucket" # O nome do bucket que você criou
     prefix  = "terraform/state"
   }
 
@@ -16,17 +12,15 @@ terraform {
   }
 }
 
-# --- O RESTO DO ARQUIVO PERMANECE IGUAL ---
-
 provider "google" {
   project = var.gcp_project_id
   region  = var.gcp_region
 }
 
-variable "gcp_project_id" { type = string; description = "O ID do projeto no Google Cloud." }
-variable "gcp_region" { type = string; description = "A região onde os recursos serão criados."; default = "us-central1" }
-variable "app_name" { type = string; description = "O nome da aplicação/serviço."; default = "my-java-app" }
-variable "db_password" { type = string; description = "A senha para os usuários do banco de dados."; sensitive = true }
+variable "gcp_project_id" { type = string }
+variable "gcp_region" { type = string; default = "us-central1" }
+variable "app_name" { type = string; default = "my-java-app" }
+variable "db_password" { type = string; sensitive = true }
 
 resource "google_project_service" "apis" {
   for_each = toset([
@@ -41,7 +35,6 @@ resource "google_artifact_registry_repository" "api_repo" {
   project       = var.gcp_project_id
   location      = var.gcp_region
   repository_id = "api-repo"
-  description   = "Repositório para a API da imersão"
   format        = "DOCKER"
   depends_on    = [google_project_service.apis]
 }
@@ -61,12 +54,6 @@ resource "google_sql_database_instance" "mysql_instance" {
   }
   root_password = var.db_password
   depends_on    = [google_project_service.apis]
-}
-
-resource "google_sql_database" "database" {
-  project  = var.gcp_project_id
-  instance = google_sql_database_instance.mysql_instance.name
-  name     = "sa"
 }
 
 resource "google_sql_user" "app_user" {

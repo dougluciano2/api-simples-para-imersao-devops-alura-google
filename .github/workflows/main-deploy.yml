@@ -80,19 +80,14 @@ jobs:
           region: ${{ env.GCP_REGION }}
           image: ${{ steps.build-image.outputs.digest }}
 
-          # As variáveis de ambiente para a aplicação rodando no Cloud Run
           env_vars: |-
-            DB_USER=root
-            DB_NAME=
+            DB_USER=db_app
+            DB_NAME=sa
             DB_HOST=/cloudsql/${{ env.GCP_PROJECT_ID }}:${{ env.GCP_REGION }}:${{ env.APP_NAME }}-mysql-db
 
-          # <<< CORREÇÃO DE INDENTAÇÃO APLICADA AQUI >>>
-          # A seção 'database' agora está no mesmo nível de 'service' e 'image'
           database:
             instance: ${{ env.APP_NAME }}-mysql-db
             secrets:
-              # Mapeia o segredo do GitHub para a variável de ambiente DB_PASSWORD
-              # que a aplicação irá usar para se conectar
               - name: DB_PASSWORD
                 value: ${{ secrets.DB_PASSWORD }}
 
