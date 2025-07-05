@@ -29,6 +29,20 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SA_EMAIL }}
 
+      # --- MUDANÇA DE ORDEM AQUI ---
+      # 1º: Rodamos o Terraform para criar TODA a infraestrutura, incluindo o Artifact Registry
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Apply
+        run: |
+          terraform init
+          terraform apply -auto-approve \
+            -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
+            -var="app_name=${{ env.APP_NAME }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}"
+
+      # 2º: Agora que a infra existe, configuramos o ambiente para o build
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -49,9 +63,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
+      # 3º: Autenticamos o Docker no Artifact Registry (que agora temos certeza que existe)
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
+      # 4º: Construímos e enviamos a imagem
       - name: Build and push Docker image
         id: build-image
         uses: docker/build-push-action@v6
@@ -62,18 +78,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Apply
-        run: |
-          terraform init
-          terraform apply -auto-approve \
-            -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
-            -var="app_name=${{ env.APP_NAME }}" \
-            -var="db_password=${{ secrets.DB_PASSWORD }}"
-
-      # --- PASSO DE DEPLOY REESCRITO DE FORMA MAIS SIMPLES ---
+      # 5º: Fazemos o deploy da imagem no Cloud Run
       - name: Deploy to Cloud Run
         id: deploy
         run: |
@@ -88,6 +93,5 @@ jobs:
 
       - name: Show Output URL
         run: |
-          # Pega a URL do serviço que acabou de ser implantado
           SERVICE_URL=$(gcloud run services describe ${{ env.APP_NAME }} --platform=managed --region=${{ env.GCP_REGION }} --project=${{ env.GCP_PROJECT_ID }} --format="value(status.url)")
           echo "Deploy finalizado! Acesse sua API em: $SERVICE_URL"
