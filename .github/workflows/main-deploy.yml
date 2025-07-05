@@ -29,20 +29,6 @@ jobs:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_SA_EMAIL }}
 
-      # --- MUDANÇA DE ORDEM AQUI ---
-      # 1º: Rodamos o Terraform para criar TODA a infraestrutura, incluindo o Artifact Registry
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Apply
-        run: |
-          terraform init
-          terraform apply -auto-approve \
-            -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
-            -var="app_name=${{ env.APP_NAME }}" \
-            -var="db_password=${{ secrets.DB_PASSWORD }}"
-
-      # 2º: Agora que a infra existe, configuramos o ambiente para o build
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -63,11 +49,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # 3º: Autenticamos o Docker no Artifact Registry (que agora temos certeza que existe)
       - name: Configure Docker
         run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
 
-      # 4º: Construímos e enviamos a imagem
       - name: Build and push Docker image
         id: build-image
         uses: docker/build-push-action@v6
@@ -78,14 +62,24 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # 5º: Fazemos o deploy da imagem no Cloud Run
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Apply
+        run: |
+          terraform init
+          terraform apply -auto-approve \
+            -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
+            -var="app_name=${{ env.APP_NAME }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}"
+
       - name: Deploy to Cloud Run
         id: deploy
         run: |
-        # Usamos a tag completa da imagem que foi gerada no passo "build-image"
-        # e a passamos para o comando de deploy.
+          # Define a tag completa da imagem para garantir que usamos a correta
           IMAGE_TAG="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.APP_NAME }}:${{ github.sha }}"
-        
+
+          # Executa o comando de deploy usando gcloud
           gcloud run deploy ${{ env.APP_NAME }} \
             --image=${IMAGE_TAG} \
             --region=${{ env.GCP_REGION }} \
@@ -96,6 +90,8 @@ jobs:
             --update-env-vars="DB_USER=root,DB_NAME=,DB_PASSWORD=${{ secrets.DB_PASSWORD }}"
 
       - name: Show Output URL
+        id: final-output
         run: |
           SERVICE_URL=$(gcloud run services describe ${{ env.APP_NAME }} --platform=managed --region=${{ env.GCP_REGION }} --project=${{ env.GCP_PROJECT_ID }} --format="value(status.url)")
           echo "Deploy finalizado! Acesse sua API em: $SERVICE_URL"
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
