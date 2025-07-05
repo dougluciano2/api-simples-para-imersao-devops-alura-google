@@ -1,31 +1,45 @@
-# Nome do seu workflow
-name: CI - my-java-app-alura-google-imersion-workflow
+# Nome final do workflow de CI/CD
+name: CI/CD - Build, Terraform and Deploy to Cloud Run
 
 # Gatilho: rodar no push para o branch 'main'
 on:
   push:
     branches: [ "main" ]
 
-# Jobs a serem executados
-jobs:
-  build-validation:
-    # Máquina virtual para rodar o job
-    runs-on: ubuntu-latest
+# Variaveis de ambiente globais para o workflow
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: us-central1
+  APP_NAME: my-java-app
+  GAR_REPO: api-repo # Nome do repositório no Artifact Registry
 
-    # Passos do job
+# Permissões para o workflow se autenticar no Google Cloud
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
     steps:
       # 1. Checkout do código
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Setup do Java JDK 21
+      # 2. Autenticação com o Google Cloud
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+          service_account: ${{ secrets.GCP_SA_EMAIL }}
+
+      # 3. Setup do Java e Cache do Maven
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
-
-      # 3. OTIMIZAÇÃO: Cache das dependências do Maven
       - name: Cache Maven packages
         uses: actions/cache@v4
         with:
@@ -33,23 +47,62 @@ jobs:
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven-
-
-      # 4. Configura o Docker Buildx, um construtor avançado que suporta cache
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # 5. Baixa as dependências no runner para "criar" o cache
       - name: Download Maven dependencies
         run: mvn dependency:go-offline
 
-      # 6. Apenas constrói a imagem Docker (com cache de camadas habilitado)
-      - name: Build Docker image
+      # 4. Setup do Docker Buildx
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # 5. Configura o Docker para autenticar com o Artifact Registry
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GCP_REGION }}-docker.pkg.dev
+
+      # 6. Build e Push da imagem para o Artifact Registry
+      - name: Build and push Docker image
+        id: build-image
         uses: docker/build-push-action@v6
         with:
           context: .
-          # IMPORTANTE: Definimos 'push' para o docker hub como 'false' para não enviar a imagem para la
-          push: false
-          # Ainda é uma boa prática dar uma tag para a imagem durante o build
-          tags: my-java-app:${{ github.sha }}
+          push: true # Agora vamos enviar a imagem!
+          tags: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.APP_NAME }}:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # 7. Setup do Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # 8. Executa o Terraform para criar/atualizar a infraestrutura
+      - name: Terraform Apply
+        run: |
+          terraform init
+          terraform apply -auto-approve \
+            -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
+            -var="db_password=${{ secrets.DB_PASSWORD }}"
+
+      # 9. Deploy da nova imagem no Cloud Run, conectando ao banco de dados
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: 'google-github-actions/deploy-cloudrun@v2'
+        with:
+          service: ${{ env.APP_NAME }}
+          region: ${{ env.GCP_REGION }}
+          image: ${{ steps.build-image.outputs.digest }} # Usa a imagem exata que foi enviada
+
+          # --- AQUI CONECTAMOS TUDO ---
+          # Passando as variáveis para a aplicação e configurando a conexão com o banco
+          env_vars: |
+            DB_USER=db_app
+            DB_NAME=sa
+            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          # A action 'deploy-cloudrun' cuida da conexão segura com o Cloud SQL
+          database:
+            instance: ${{ env.APP_NAME }}-mysql-db
+            secrets:
+              - name: DB_PASSWORD
+                value: ${{ secrets.DB_PASSWORD }}
+
+      # 10. Mostra a URL final da aplicação
+      - name: Show Output
+        run: "echo 'Deploy finalizado! Acesse sua API em: ${{ steps.deploy.outputs.url }}'"
