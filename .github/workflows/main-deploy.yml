@@ -88,18 +88,20 @@ jobs:
         with:
           service: ${{ env.APP_NAME }}
           region: ${{ env.GCP_REGION }}
-          image: ${{ steps.build-image.outputs.digest }} # Usa a imagem exata que foi enviada
+          image: ${{ steps.build-image.outputs.digest }}
 
-          # --- AQUI CONECTAMOS TUDO ---
-          # Passando as variáveis para a aplicação e configurando a conexão com o banco
-          env_vars: |
+          # Define as variáveis de ambiente para a aplicação
+          env_vars: |-
             DB_USER=db_app
             DB_NAME=sa
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-          # A action 'deploy-cloudrun' cuida da conexão segura com o Cloud SQL
+            # A URL do banco é injetada automaticamente pela action quando a seção 'database' é usada
+
+          # CORREÇÃO AQUI: 'database' está no mesmo nível de 'service', 'image', etc.
+          # Configura a conexão segura com o Cloud SQL
           database:
             instance: ${{ env.APP_NAME }}-mysql-db
             secrets:
+              # Mapeia o segredo do GitHub para a variável de ambiente DB_PASSWORD
               - name: DB_PASSWORD
                 value: ${{ secrets.DB_PASSWORD }}
 
