@@ -17,11 +17,29 @@ provider "google" {
   region  = var.gcp_region
 }
 
-variable "gcp_project_id" { type = string }
-variable "gcp_region" { type = string; default = "us-central1" }
-variable "app_name" { type = string; default = "my-java-app" }
-variable "db_password" { type = string; sensitive = true }
+# --- Variáveis ---
+variable "gcp_project_id" {
+  type        = string
+  description = "O ID do projeto no Google Cloud."
+}
 
+variable "gcp_region" {
+  type        = string
+  description = "A região onde os recursos serão criados."
+  default     = "us-central1"
+}
+
+variable "app_name" {
+  type        = string
+  description = "O nome da aplicação/serviço."
+  default     = "my-java-app"
+}
+
+variable "db_password" {
+  type        = string
+  description = "A senha para os usuários do banco de dados."
+  sensitive   = true
+}
 resource "google_project_service" "apis" {
   for_each = toset([
     "run.googleapis.com", "artifactregistry.googleapis.com",
