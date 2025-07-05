@@ -82,8 +82,12 @@ jobs:
       - name: Deploy to Cloud Run
         id: deploy
         run: |
+        # Usamos a tag completa da imagem que foi gerada no passo "build-image"
+        # e a passamos para o comando de deploy.
+          IMAGE_TAG="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.APP_NAME }}:${{ github.sha }}"
+        
           gcloud run deploy ${{ env.APP_NAME }} \
-            --image=${{ steps.build-image.outputs.digest }} \
+            --image=${IMAGE_TAG} \
             --region=${{ env.GCP_REGION }} \
             --project=${{ env.GCP_PROJECT_ID }} \
             --platform=managed \
