@@ -98,3 +98,9 @@ resource "google_cloud_run_v2_service" "api_service" {
   }
   depends_on = [google_project_service.apis]
 }
+
+# --- ADICIONE ESTE BLOCO NO FINAL DO ARQUIVO ---
+output "cloud_run_service_url" {
+  description = "A URL do serviço do Cloud Run."
+  value       = google_cloud_run_v2_service.api_service.uri
+}
