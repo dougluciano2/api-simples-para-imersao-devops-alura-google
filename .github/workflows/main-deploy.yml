@@ -72,3 +72,30 @@ jobs:
             -var="gcp_project_id=${{ env.GCP_PROJECT_ID }}" \
             -var="app_name=${{ env.APP_NAME }}" \
             -var="db_password=${{ secrets.DB_PASSWORD }}"
+
+      # <<< CORREÇÃO FINAL APLICADA AQUI >>>
+      - name: Deploy to Cloud Run
+        id: deploy
+        run: |
+          # Pega o nome de conexão completo da instância do SQL
+          DB_CONNECTION_NAME=$(gcloud sql instances describe ${{ env.DB_INSTANCE_NAME }} --project=${{ env.GCP_PROJECT_ID }} --format="value(connectionName)")
+          
+          # Define a tag completa da imagem que foi enviada para o Artifact Registry
+          IMAGE_WITH_TAG="${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.GAR_REPO }}/${{ env.APP_NAME }}:${{ github.sha }}"
+
+          # Executa o comando de deploy, conectando com o usuário da aplicação 'db_app'
+          gcloud run deploy ${{ env.APP_NAME }} \
+            --image=${IMAGE_WITH_TAG} \
+            --region=${{ env.GCP_REGION }} \
+            --project=${{ env.GCP_PROJECT_ID }} \
+            --platform=managed \
+            --allow-unauthenticated \
+            --add-cloudsql-instances=${DB_CONNECTION_NAME} \
+            --update-env-vars="SPRING_PROFILES_ACTIVE=gcp,DB_USER=db_app,DB_NAME=sa,DB_PASSWORD=${{ secrets.DB_PASSWORD }},DB_CONNECTION_NAME=${DB_CONNECTION_NAME}"
+
+      - name: Show Output URL
+        id: final-output
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ env.APP_NAME }} --platform=managed --region=${{ env.GCP_REGION }} --project=${{ env.GCP_PROJECT_ID }} --format="value(status.url)")
+          echo "Deploy finalizado! Acesse sua API em: $SERVICE_URL"
+          echo "url=$SERVICE_URL" >> $GITHUB_OUTPUT
