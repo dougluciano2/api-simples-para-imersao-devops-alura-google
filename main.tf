@@ -73,6 +73,13 @@ resource "google_sql_database_instance" "mysql_instance" {
   depends_on    = [google_project_service.apis]
 }
 
+# 2. Cria o banco de dados (schema) 'sa' DENTRO da instância
+resource "google_sql_database" "database" {
+  project  = var.gcp_project_id
+  instance = google_sql_database_instance.mysql_instance.name
+  name     = "sa" # O nome exato do banco que a aplicação espera
+}
+
 resource "google_sql_user" "app_user" {
   project  = var.gcp_project_id
   instance = google_sql_database_instance.mysql_instance.name
